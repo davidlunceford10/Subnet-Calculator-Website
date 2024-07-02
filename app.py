@@ -33,16 +33,24 @@ def subnet_calculator(CIDR_network_ip_address, subnet_count):
 
     subnets = list(network.subnets(new_prefix=network_portion_plus_subnet))
 
-    return subnets
+    # Ensure we return the correct number of subnets
+    return subnets[:subnet_count]
 
 def format_subnets(network_name, subnets):
     output = []
     output.append('Fixed Length Subnet Mask Subnetting Calculator<br>')
-    output.append(f'\nNetwork Name: {network_name}<br>')
+    output.append(f'Network Name: {network_name}<br>')
     output.append('Subnets:<br>')
 
     for i, subnet in enumerate(subnets):
-        output.append(f'Subnet {i+1}: {subnet}<br>')
+        network_address = subnet.network_address
+        broadcast_address = subnet.broadcast_address
+        usable_ips = list(subnet.hosts())
+
+        output.append(f'Subnet {i+1}:<br>')
+        output.append(f'Network Address: {network_address}<br>')
+        output.append(f'Usable IP Range: {usable_ips[0]} - {usable_ips[-1]}<br>')
+        output.append(f'Broadcast Address: {broadcast_address}<br><br>')
 
     return ''.join(output)
 
