@@ -13,6 +13,12 @@ init()
 def index():
     return render_template('index.html')
 
+@app.route('/submit', methods=['POST'])
+def submit_form():
+    data = request.form.get('data')
+    # Process data here
+    return 'Form submitted successfully'
+
 @app.route('/calculate', methods=['POST'])
 def calculate():
     network_name = request.form['networkName']
