@@ -1,45 +1,65 @@
 from flask import Flask, request, jsonify, render_template
-import shutil
-from colorama import Fore, Style, init
 import ipaddress
 import os
 import time
+import shutil
+from colorama import Fore, Style, init
 
 app = Flask(__name__)
 
 init()
 
-@app.route('/')
-def index():
-    return render_template('index.html')
+# Function to calculate subnets
+def subnet_calculator(CIDR_network_ip_address, subnet_count):
+    try:
+        network = ipaddress.IPv4Network(CIDR_network_ip_address)
+        network_portion_plus_subnet = network.prefixlen + (subnet_count - 1).bit_length()
 
-@app.route('/submit', methods=['POST'])
-def submit_form():
-    data = request.form.get('data')
-    # Process data here
-    return 'Form submitted successfully'
+        if network_portion_plus_subnet > 32:
+            raise ValueError(f"Cannot divide {network} into {subnet_count} subnets. The required prefix length {network_portion_plus_subnet} is too large.")
 
+        subnets = list(network.subnets(new_prefix=network_portion_plus_subnet))
+
+        return subnets
+
+    except ValueError as e:
+        return str(e)
+
+# Function to handle form submission and subnet calculation
 @app.route('/calculate', methods=['POST'])
 def calculate():
-    network_name = request.form['networkName']
-    CIDR_network_ip_address = request.form['networkIp']
-    text_file_yn = request.form['textFile']
-
     try:
+        network_name = request.form['networkName']
+        CIDR_network_ip_address = request.form['networkIp']
+        text_file_yn = request.form['textFile']
+
         if text_file_yn == 'yes':
-            # Handle file creation and subnet calculation as in your original Python script
             subnet_file_content = f"Network Name: {network_name}\n"
             subnet_file_content += f"Network IP Address: {CIDR_network_ip_address}\n"
-            # Perform subnet calculations here and add results to subnet_file_content
+
+            subnets = subnet_calculator(CIDR_network_ip_address, int(request.form['subnetCount']))
+            if isinstance(subnets, list):
+                subnet_file_content += '\n'.join([f'Subnet {i+1}:\nNetwork Address: {subnet.network_address}\nBroadcast Address: {subnet.broadcast_address}\nRange of Usable IP addresses: {list(subnet.hosts())[0]} to {list(subnet.hosts())[-1]}\n' for i, subnet in enumerate(subnets)])
+            else:
+                subnet_file_content += f'Error: {subnets}'
+
         else:
-            # Handle subnet calculation without file creation
-            subnet_file_content = ""
-            # Perform subnet calculations here and add results to subnet_file_content
+            subnets = subnet_calculator(CIDR_network_ip_address, int(request.form['subnetCount']))
+            if isinstance(subnets, list):
+                subnet_file_content = '\n'.join([f'Subnet {i+1}:\nNetwork Address: {subnet.network_address}\nBroadcast Address: {subnet.broadcast_address}\nRange of Usable IP addresses: {list(subnet.hosts())[0]} to {list(subnet.hosts())[-1]}\n' for i, subnet in enumerate(subnets)])
+            else:
+                subnet_file_content = f'Error: {subnets}'
 
         return jsonify({'result': subnet_file_content})
 
     except Exception as e:
         return jsonify({'error': str(e)})
+
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
 
 if __name__ == '__main__':
     app.run(debug=True)

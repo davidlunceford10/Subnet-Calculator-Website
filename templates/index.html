@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Subnet Calculator</title>
-    <link rel="stylesheet" href="static/styles.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
     <div class="container">
         <h1>Fixed Length Subnet Mask Subnetting Calculator</h1>
-        <form id="subnetForm">
+        <form id="subnetForm" action="{{ url_for('calculate') }}" method="POST">
             <label for="networkName">Network Name:</label>
             <input type="text" id="networkName" name="networkName" required>
             <br>
@@ -33,8 +33,8 @@
         document.getElementById('subnetForm').addEventListener('submit', function(event) {
             event.preventDefault();
             var formData = new FormData(this);
-            fetch('/calculate', {
-                method: 'POST',
+            fetch(this.action, {
+                method: this.method,
                 body: formData
             })
             .then(response => response.json())
