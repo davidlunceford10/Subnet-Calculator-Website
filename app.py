@@ -1,9 +1,11 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, render_template, request, jsonify
 import ipaddress
-import os
+import shutil
 import time
 
 app = Flask(__name__)
+
+# Initialize Colorama (optional for web app)
 
 @app.route('/')
 def index():
@@ -14,51 +16,53 @@ def calculate():
     try:
         network_name = request.form['networkName']
         CIDR_network_ip_address = request.form['networkIp']
-        text_file_yn = request.form['textFile']
+        subnet_count = int(request.form['subnetCount'])
 
-        # Validate CIDR format
-        try:
-            network = ipaddress.IPv4Network(CIDR_network_ip_address)
-        except ValueError:
-            return jsonify({'error': 'Invalid CIDR format'})
+        subnets = subnet_calculator(CIDR_network_ip_address, subnet_count)
 
-        # Perform subnet calculations based on user input
-        if text_file_yn == 'yes':
-            subnet_file_content = generate_subnet_text(network_name, CIDR_network_ip_address)
-        else:
-            subnet_file_content = generate_subnet_text(network_name, CIDR_network_ip_address, create_file=False)
+        result = format_subnets(network_name, subnets)
 
-        return jsonify({'result': subnet_file_content})
+        return jsonify({'result': result})
 
     except Exception as e:
         return jsonify({'error': str(e)})
 
-
-def generate_subnet_text(network_name, CIDR_network_ip_address, create_file=True):
-    subnets = subnet_calculator(CIDR_network_ip_address)
-    subnet_file_content = f"Network Name: {network_name}\n"
-    subnet_file_content += f"Network IP Address: {CIDR_network_ip_address}\n\n"
-
-    for i, subnet in enumerate(subnets, start=1):
-        subnet_file_content += f"Subnet {i}:\n"
-        subnet_file_content += f"Network Address: {subnet.network_address}\n"
-        subnet_file_content += f"Broadcast Address: {subnet.broadcast_address}\n"
-        subnet_file_content += f"Range of Usable IP addresses: {list(subnet.hosts())[0]} to {list(subnet.hosts())[-1]}\n\n"
-
-    if create_file:
-        filename = f"{network_name}_{time.strftime('%Y_%m_%d_%H_%M')}.txt"
-        file_path = os.path.join(os.getcwd(), filename)
-        with open(file_path, 'w') as file:
-            file.write(subnet_file_content)
-
-    return subnet_file_content
-
-
-def subnet_calculator(CIDR_network_ip_address):
+def subnet_calculator(CIDR_network_ip_address, subnet_count):
     network = ipaddress.IPv4Network(CIDR_network_ip_address)
-    subnets = list(network.subnets(new_prefix=network.prefixlen))
+
+    network_portion_plus_subnet = network.prefixlen + (subnet_count - 1).bit_length()
+
+    if network_portion_plus_subnet > 32:
+        raise ValueError(f"Cannot divide {network} into {subnet_count} subnets. The required prefix length {network_portion_plus_subnet} is too large.")
+
+    subnets = list(network.subnets(new_prefix=network_portion_plus_subnet))
+
     return subnets
 
+def format_subnets(network_name, subnets):
+    output = []
 
-if __name__ == '__main__':
+    output.append(center_text(color_text('Fixed Length Subnet Mask Subnetting Calculator', Fore.GREEN)))
+    output.append(f'\nNetwork Name: {network_name}\n')
+
+    subnet_number = 0
+    for subnet in subnets:
+        subnet_number += 1
+        output.append(f'\nSubnet {subnet_number}:')
+        output.append(f'Network Address: {subnet.network_address}')
+        output.append(f'Broadcast Address: {subnet.broadcast_address}')
+        output.append(f'Range of Usable IP addresses: {list(subnet.hosts())[0]} to {list(subnet.hosts())[-1]}')
+
+    output_text = '\n'.join(output)
+    return output_text
+
+def color_text(text, color):
+    return f"{color}{text}{Style.RESET_ALL}"
+
+def center_text(text):
+    terminal_width = shutil.get_terminal_size().columns
+    centered_text = text.center(terminal_width)
+    return centered_text
+
+if __name__ == "__main__":
     app.run(debug=True)
