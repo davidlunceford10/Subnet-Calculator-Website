@@ -1,11 +1,7 @@
 from flask import Flask, render_template, request, jsonify
 import ipaddress
-import shutil
-import time
 
 app = Flask(__name__)
-
-# Initialize Colorama (optional for web app)
 
 @app.route('/')
 def index():
@@ -42,27 +38,5 @@ def subnet_calculator(CIDR_network_ip_address, subnet_count):
 def format_subnets(network_name, subnets):
     output = []
 
-    output.append(center_text(color_text('Fixed Length Subnet Mask Subnetting Calculator', Fore.GREEN)))
-    output.append(f'\nNetwork Name: {network_name}\n')
-
-    subnet_number = 0
-    for subnet in subnets:
-        subnet_number += 1
-        output.append(f'\nSubnet {subnet_number}:')
-        output.append(f'Network Address: {subnet.network_address}')
-        output.append(f'Broadcast Address: {subnet.broadcast_address}')
-        output.append(f'Range of Usable IP addresses: {list(subnet.hosts())[0]} to {list(subnet.hosts())[-1]}')
-
-    output_text = '\n'.join(output)
-    return output_text
-
-def color_text(text, color):
-    return f"{color}{text}{Style.RESET_ALL}"
-
-def center_text(text):
-    terminal_width = shutil.get_terminal_size().columns
-    centered_text = text.center(terminal_width)
-    return centered_text
-
-if __name__ == "__main__":
-    app.run(debug=True)
+    output.append(f'Fixed Length Subnet Mask Subnetting Calculator\n')
+    output.appe
