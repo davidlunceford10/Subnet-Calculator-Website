@@ -38,7 +38,7 @@ def subnet_calculator(CIDR_network_ip_address, subnet_count):
 def format_subnets(network_name, subnets):
     output = []
     output.append('Fixed Length Subnet Mask Subnetting Calculator<br>')
-    output.append(f'Network Name: {network_name}<br>')
+    output.append(f'\nNetwork Name: {network_name}<br>')
     output.append('Subnets:<br>')
 
     for i, subnet in enumerate(subnets):
